@@ -26,11 +26,17 @@ import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Size;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
@@ -90,7 +96,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, getResources().getDisplayMetrics());
     borderedText = new BorderedText(textSizePx);
-    borderedText.setTypeface(Typeface.MONOSPACE);
+    borderedText.setTypeface(Typeface.SERIF);
 
     tracker = new MultiBoxTracker(this);
 
@@ -215,10 +221,16 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
               if (location != null && result.getConfidence() >= minimumConfidence) {
                 canvas.drawRect(location, paint);
 
+
                 cropToFrameTransform.mapRect(location);
 
                 result.setLocation(location);
-                mappedRecognitions.add(result);
+
+                if(result.getTitle().equalsIgnoreCase("cup")){
+                  Toast.makeText(getApplicationContext(),"Found Cup",Toast.LENGTH_LONG).show();
+                  takeScreenshot();
+                }
+            mappedRecognitions.add(result);
               }
             }
 
@@ -264,5 +276,36 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   @Override
   protected void setNumThreads(final int numThreads) {
     runInBackground(() -> detector.setNumThreads(numThreads));
+  }
+
+  private void takeScreenshot() {
+    Date now = new Date();
+    android.text.format.DateFormat.format("yyyy-MM-dd_hh:mm:ss", now);
+
+    try {
+      // image naming and path  to include sd card  appending name you choose for file
+      String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
+
+      // create bitmap screen capture
+      View v1 = getWindow().getDecorView().getRootView();
+      v1.setDrawingCacheEnabled(true);
+      Bitmap bitmap = Bitmap.createBitmap(v1.getDrawingCache());
+      v1.setDrawingCacheEnabled(false);
+
+      File imageFile = new File(mPath);
+
+      FileOutputStream outputStream = new FileOutputStream(imageFile);
+      int quality = 100;
+      bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+      outputStream.flush();
+      outputStream.close();
+
+      Toast.makeText(getApplicationContext(),"Screenshot Taken", Toast.LENGTH_LONG).show();
+
+    //  openScreenshot(imageFile);
+    } catch (Throwable e) {
+      // Several error may come out with file handling or DOM
+      e.printStackTrace();
+    }
   }
 }
