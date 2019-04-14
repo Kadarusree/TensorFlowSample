@@ -16,6 +16,7 @@
 
 package org.tensorflow.lite.examples.detection;
 
+import android.Manifest;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -39,11 +40,16 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeMap;
+
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
 import org.tensorflow.lite.examples.detection.customview.OverlayView.DrawCallback;
 import org.tensorflow.lite.examples.detection.env.BorderedText;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
+import org.tensorflow.lite.examples.detection.listners.PictureCapturingListener;
+import org.tensorflow.lite.examples.detection.services.APictureCapturingService;
+import org.tensorflow.lite.examples.detection.services.PictureCapturingServiceImpl;
 import org.tensorflow.lite.examples.detection.tflite.Classifier;
 import org.tensorflow.lite.examples.detection.tflite.TFLiteObjectDetectionAPIModel;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
@@ -52,7 +58,7 @@ import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
  * objects.
  */
-public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
+public class DetectorActivity extends CameraActivity implements OnImageAvailableListener, PictureCapturingListener {
   private static final Logger LOGGER = new Logger();
 
   // Configuration values for the prepackaged SSD model.
@@ -90,6 +96,18 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   private BorderedText borderedText;
 
+  /////Capturing Picture////////////
+  private static final String[] requiredPermissions = {
+          Manifest.permission.WRITE_EXTERNAL_STORAGE,
+          Manifest.permission.CAMERA,
+  };
+  private static final int MY_PERMISSIONS_REQUEST_ACCESS_CODE = 1;
+
+
+
+  //The capture service
+  private APictureCapturingService pictureService;
+
   @Override
   public void onPreviewSizeChosen(final Size size, final int rotation) {
     final float textSizePx =
@@ -99,7 +117,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     borderedText.setTypeface(Typeface.SERIF);
 
     tracker = new MultiBoxTracker(this);
-
+    pictureService = PictureCapturingServiceImpl.getInstance(this);
     int cropSize = TF_OD_API_INPUT_SIZE;
 
     try {
@@ -226,9 +244,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 result.setLocation(location);
 
-                if(result.getTitle().equalsIgnoreCase("cup")){
-                  Toast.makeText(getApplicationContext(),"Found Cup",Toast.LENGTH_LONG).show();
-                  takeScreenshot();
+                if(result.getTitle().equalsIgnoreCase("tv")){
+                  Toast.makeText(getApplicationContext(),"Found tv",Toast.LENGTH_LONG).show();
+                  //takeScreenshot();
+
+                  pictureService.startCapturing(DetectorActivity.this);
                 }
             mappedRecognitions.add(result);
               }
@@ -260,6 +280,28 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   @Override
   protected Size getDesiredPreviewFrameSize() {
     return DESIRED_PREVIEW_SIZE;
+  }
+
+  @Override
+  public void onCaptureDone(String pictureUrl, byte[] pictureData) {
+    if (pictureData != null && pictureUrl != null) {
+
+      showToast("Picture saved to " + pictureUrl);
+    }
+  }
+
+  @Override
+  public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
+    if (picturesTaken != null && !picturesTaken.isEmpty()) {
+      showToast("Done capturing all photos!");
+      return;
+    }
+    showToast("No camera detected!");
+  }
+
+  @Override
+  public void onPointerCaptureChanged(boolean hasCapture) {
+
   }
 
   // Which detection model to use: by default uses Tensorflow Object Detection API frozen
@@ -307,5 +349,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
       // Several error may come out with file handling or DOM
       e.printStackTrace();
     }
+  }
+
+  private void showToast(final String text) {
+    runOnUiThread(() ->
+            Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show()
+    );
   }
 }
