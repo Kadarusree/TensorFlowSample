@@ -17,6 +17,7 @@
 package org.tensorflow.lite.examples.detection;
 
 import android.Manifest;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -47,6 +48,7 @@ import org.tensorflow.lite.examples.detection.customview.OverlayView.DrawCallbac
 import org.tensorflow.lite.examples.detection.env.BorderedText;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
+import org.tensorflow.lite.examples.detection.imageCapture.ImageCaptureActivity;
 import org.tensorflow.lite.examples.detection.listners.PictureCapturingListener;
 import org.tensorflow.lite.examples.detection.services.APictureCapturingService;
 import org.tensorflow.lite.examples.detection.services.PictureCapturingServiceImpl;
@@ -247,8 +249,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 if(result.getTitle().equalsIgnoreCase("tv")){
                   Toast.makeText(getApplicationContext(),"Found tv",Toast.LENGTH_LONG).show();
                   //takeScreenshot();
+                  startActivity(new Intent(getApplicationContext(), ImageCaptureActivity.class));
 
-                  pictureService.startCapturing(DetectorActivity.this);
                 }
             mappedRecognitions.add(result);
               }

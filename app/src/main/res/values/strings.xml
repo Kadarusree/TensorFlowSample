@@ -3,4 +3,8 @@
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+
+    <string name="take_pic_btn_label">Take photos</string>
+    <string name="front_picture">Front Camera Picture</string>
+    <string name="back_picture">Back Camera Picture</string>
 </resources>
