@@ -1,59 +1,79 @@
-package org.tensorflow.lite.examples.detection.imageCapture;
+/*
+* Copyright 2013 The Android Open Source Project
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+
+package org.tensorflow.lite.examples.detection.bluetooth;
 
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.FragmentTransaction;
+import android.app.KeyguardManager;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build;
-import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Environment;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyPermanentlyInvalidatedException;
+import android.security.keystore.KeyProperties;
+import android.support.v4.app.ActivityCompat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.tensorflow.lite.examples.detection.R;
-import org.tensorflow.lite.examples.detection.bluetooth.BluetoothChatFragment;
-import org.tensorflow.lite.examples.detection.bluetooth.Model;
-import org.tensorflow.lite.examples.detection.bluetooth.Utils;
 import org.tensorflow.lite.examples.detection.common.activities.SampleActivityBase;
 import org.tensorflow.lite.examples.detection.common.logger.Log;
 import org.tensorflow.lite.examples.detection.common.logger.LogWrapper;
 import org.tensorflow.lite.examples.detection.common.logger.MessageOnlyLogFilter;
-import org.tensorflow.lite.examples.detection.listners.PictureCapturingListener;
-import org.tensorflow.lite.examples.detection.services.APictureCapturingService;
-import org.tensorflow.lite.examples.detection.services.PictureCapturingServiceImpl;
 
 import java.io.File;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
 
-public class ImageCaptureActivity extends SampleActivityBase implements PictureCapturingListener, ActivityCompat.OnRequestPermissionsResultCallback {
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 
-    private static final String[] requiredPermissions = {
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.CAMERA,
-    };
-    private static final int MY_PERMISSIONS_REQUEST_ACCESS_CODE = 1;
 
-    private ImageView uploadBackPhoto;
 
-    //The capture service
-    private APictureCapturingService pictureService;
 
+/**
+ * A simple launcher activity containing a summary sample description, sample log and a custom
+ * {@link android.support.v4.app.Fragment} which can display a view.
+ * <p>
+ * For devices with displays with a width of 720dp or greater, the sample log is always visible,
+ * on other devices it's visibility is controlled by an item on the Action Bar.
+ */
+public class MainActivity extends SampleActivityBase {
 
     public static final String TAG = "MainActivity";
 
@@ -64,38 +84,42 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
 
 
 
+    private KeyStore keyStore;
+    // Variable used for storing the key in the Android Keystore container
+    private static final String KEY_NAME = "androidHive";
+    private Cipher cipher;
+    private TextView textView;
 
-
-
-    //Bt Related
 
     RadioButton test, train;
     Spinner users;
+
     String storagePath, testpath, trainpath;
 
 
     ArrayList<Model> images;
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_image_capture);
-        checkPermissions();
-        uploadBackPhoto = (ImageView) findViewById(R.id.backIV);
-        // getting instance of the Service from PictureCapturingServiceImpl
-        pictureService = PictureCapturingServiceImpl.getInstance(this);
-        showToast("Starting capture!");
-        pictureService.startCapturing(this);
+        setContentView(R.layout.activity_main);
+    //    intitFP()    ;
 
 
-        //Bt Related
         images= new ArrayList<>();
 
         storagePath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/FaceRec";
 
         File f=new File(storagePath);
         if(!f.exists()){
-            f.mkdir();
+           f.mkdir();
         }
 
 
@@ -160,7 +184,7 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
                     }
                     else{
                         trainpath = f.getAbsolutePath();
-                        // users.setSelection(0);
+                       // users.setSelection(0);
                         File userpath = new File(trainpath+"/"+getResources().getStringArray(R.array.users)[users.getSelectedItemPosition()]);
                         if (!userpath.exists()){
                             if(userpath.mkdir()){
@@ -206,73 +230,7 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
             transaction.commit();
         }
 
-    }
 
-    private void showToast(final String text) {
-        runOnUiThread(() ->
-                Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show()
-        );
-    }
-
-    /**
-     * We've finished taking pictures from all phone's cameras
-     */
-    @Override
-    public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
-        if (picturesTaken != null && !picturesTaken.isEmpty()) {
-            showToast("Done capturing all photos!");
-            return;
-        }
-        showToast("No camera detected!");
-    }
-
-    /**
-     * Displaying the pictures taken.
-     */
-    @Override
-    public void onCaptureDone(String pictureUrl, byte[] pictureData) {
-        if (pictureData != null && pictureUrl != null) {
-            runOnUiThread(() -> {
-                final Bitmap bitmap = BitmapFactory.decodeByteArray(pictureData, 0, pictureData.length);
-                final int nh = (int) (bitmap.getHeight() * (512.0 / bitmap.getWidth()));
-                final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, nh, true);
-                if (pictureUrl.contains("0_pic.jpg")) {
-                    uploadBackPhoto.setImageBitmap(scaled);
-                }
-            });
-            showToast("Picture saved to " + pictureUrl);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[], @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_ACCESS_CODE: {
-                if (!(grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    checkPermissions();
-                }
-            }
-        }
-    }
-
-    /**
-     * checking  permissions at Runtime.
-     */
-    @TargetApi(Build.VERSION_CODES.M)
-    private void checkPermissions() {
-        final List<String> neededPermissions = new ArrayList<>();
-        for (final String permission : requiredPermissions) {
-            if (ContextCompat.checkSelfPermission(getApplicationContext(),
-                    permission) != PackageManager.PERMISSION_GRANTED) {
-                neededPermissions.add(permission);
-            }
-        }
-        if (!neededPermissions.isEmpty()) {
-            requestPermissions(neededPermissions.toArray(new String[]{}),
-                    MY_PERMISSIONS_REQUEST_ACCESS_CODE);
-        }
     }
 
     @Override
@@ -312,67 +270,132 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
 
         // On screen logging via a fragment with a TextView.
 
-        //  msgFilter.setNext(logFragment.getLogView());
+      //  msgFilter.setNext(logFragment.getLogView());
 
         Log.i(TAG, "Ready");
     }
 
-    public void getTrainpath(){
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+"Train";
-        File f = new File(path);
-        if (f.exists()){
-            trainpath = f.getAbsolutePath();
-        }
-        else {
-            f.mkdir();
 
-            f.mkdirs();
+    @TargetApi(Build.VERSION_CODES.M)
+    protected void generateKey() {
+        try {
+            keyStore = KeyStore.getInstance("AndroidKeyStore");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        KeyGenerator keyGenerator;
+        try {
+            keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new RuntimeException("Failed to get KeyGenerator instance", e);
+        }
+
+        try {
+            keyStore.load(null);
+            keyGenerator.init(new
+                    KeyGenParameterSpec.Builder(KEY_NAME,
+                    KeyProperties.PURPOSE_ENCRYPT |
+                            KeyProperties.PURPOSE_DECRYPT)
+                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
+                    .setUserAuthenticationRequired(true)
+                    .setEncryptionPaddings(
+                            KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                    .build());
+            keyGenerator.generateKey();
+        } catch (NoSuchAlgorithmException |
+                InvalidAlgorithmParameterException
+                | CertificateException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    public boolean cipherInit() {
+        try {
+            cipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" + KeyProperties.ENCRYPTION_PADDING_PKCS7);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            throw new RuntimeException("Failed to get Cipher", e);
+        }
+
+        try {
+            keyStore.load(null);
+            SecretKey key = (SecretKey) keyStore.getKey(KEY_NAME,
+                    null);
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            return true;
+        } catch (KeyPermanentlyInvalidatedException e) {
+            return false;
+        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException("Failed to init Cipher", e);
         }
     }
 
-    public void createFolders() {
-        String test = Environment.getExternalStorageDirectory() + "/FaceRec/Test";
-        String train = Environment.getExternalStorageDirectory() + "/FaceRec/Train";
-
-        File ftest = new File(test);
-        if (!ftest.exists()) {
-            ftest.mkdir();
-        } else {
-
-        }
-
-        File ftrain = new File(train);
-        if (!ftrain.exists()) {
-            ftrain.mkdir();
-        } else {
-
-        }
-
-        String user1 = train + "/user1";
-        String user2 = train + "/user2";
-        String user3 = train + "/user3";
-
-        File fuser1 = new File(user1);
-        if (!fuser1.exists()) {
-            fuser1.mkdir();
-        } else {
-
-        }
-
-        File fuser2 = new File(user2);
-        if (!fuser2.exists()) {
-            fuser2.mkdir();
-        } else {
-
-        }
 
 
-        File fuser3 = new File(user3);
-        if (!fuser3.exists()) {
-            fuser3.mkdir();
-        } else {
 
-        }
+public void getTrainpath(){
+    String path = Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+"Train";
+    File f = new File(path);
+    if (f.exists()){
+        trainpath = f.getAbsolutePath();
     }
+    else {
+        f.mkdir();
+
+        f.mkdirs();
+    }
+}
+
+public void createFolders(){
+    String test = Environment.getExternalStorageDirectory()+"/FaceRec/Test";
+    String train = Environment.getExternalStorageDirectory()+"/FaceRec/Train";
+
+    File ftest = new File(test);
+    if(!ftest.exists()){
+        ftest.mkdir();
+    }
+    else {
+
     }
 
+    File ftrain = new File(train);
+    if(!ftrain.exists()){
+        ftrain.mkdir();
+    }
+    else {
+
+    }
+
+    String user1= train+"/user1";
+    String user2= train+"/user2";
+    String user3= train+"/user3";
+
+    File fuser1 = new File(user1);
+    if(!fuser1.exists()){
+        fuser1.mkdir();
+    }
+    else {
+
+    }
+
+    File fuser2 = new File(user2);
+    if(!fuser2.exists()){
+        fuser2.mkdir();
+    }
+    else {
+
+    }
+
+
+    File fuser3 = new File(user3);
+    if(!fuser3.exists()){
+        fuser3.mkdir();
+    }
+    else {
+
+    }
+
+}
+
+}

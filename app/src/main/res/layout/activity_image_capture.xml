@@ -36,22 +36,87 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/bg_shadow">
+            <!--
+              Copyright 2013 The Android Open Source Project
 
-            <ImageView
-                android:id="@+id/frontIV"
+              Licensed under the Apache License, Version 2.0 (the "License");
+              you may not use this file except in compliance with the License.
+              You may obtain a copy of the License at
+
+                  http://www.apache.org/licenses/LICENSE-2.0
+
+              Unless required by applicable law or agreed to in writing, software
+              distributed under the License is distributed on an "AS IS" BASIS,
+              WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+              See the License for the specific language governing permissions and
+              limitations under the License.
+              -->
+            <LinearLayout
+                xmlns:android="http://schemas.android.com/apk/res/android"
+                android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:contentDescription="@string/front_picture" />
+                android:id="@+id/sample_main_layout">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="0.2"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="0.5">
+                        <RadioButton
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:text="TEST"
+                            android:id="@+id/rb_test"/>
+                        <RadioButton
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:text="TRAIN"
+                            android:id="@+id/rb_train"/>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="0.5">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:text="Select User"
+                            android:gravity="center"/>
+                        <Spinner
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:text="Select User"
+                            android:entries="@array/users"
+                            android:gravity="left|center"
+                            android:id="@+id/spn_users"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/darker_gray" />
+
+                <FrameLayout
+                    android:id="@+id/sample_content_fragment"
+                    android:layout_weight="0.8"
+                    android:layout_width="match_parent"
+                    android:layout_height="0px" />
+
+            </LinearLayout>
 
         </RelativeLayout>
 
-        <Button
-            android:id="@+id/startCaptureBtn"
-            android:background="@drawable/bg_shadow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/take_pic_btn_label" />
+
 
     </LinearLayout>
 </ScrollView>

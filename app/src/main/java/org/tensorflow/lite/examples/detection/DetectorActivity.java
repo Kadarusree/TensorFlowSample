@@ -246,11 +246,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 result.setLocation(location);
 
-                if(result.getTitle().equalsIgnoreCase("tv")){
-                  Toast.makeText(getApplicationContext(),"Found tv",Toast.LENGTH_LONG).show();
+                if(result.getTitle().equalsIgnoreCase("person")){
+               //   Toast.makeText(getApplicationContext(),"Found tv",Toast.LENGTH_LONG).show();
                   //takeScreenshot();
                   startActivity(new Intent(getApplicationContext(), ImageCaptureActivity.class));
-
+                   return;
                 }
             mappedRecognitions.add(result);
               }
