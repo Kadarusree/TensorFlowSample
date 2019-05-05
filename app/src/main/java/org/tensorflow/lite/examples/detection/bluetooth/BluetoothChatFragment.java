@@ -196,17 +196,37 @@ public class BluetoothChatFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-                if (images.size()>0){
-                    for (int i=0;i<images.size();i++){
-                        mChatService.write(images.get(i));
-                    }
-                    Toast.makeText(getActivity(), images.size()+"Images Sent", Toast.LENGTH_LONG).show();
-                     images.clear();
-                }
-                else {
-                    Toast.makeText(getActivity(), "Please Select Images", Toast.LENGTH_LONG).show();
 
+                if(Utils.bitmap != null){
+                    Bitmap photo = Utils.bitmap;
+                    img.setImageBitmap(photo);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    if(photo!=null) {
+                        photo.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                        byte[] byteArray = stream.toByteArray();
+
+                        Model m = new Model(byteArray, Utils.storagePath);
+
+                         mChatService.write(m);
+                         Utils.bitmap = null;
+                    }
                 }
+                else{
+                    if (images.size()>0){
+                        for (int i=0;i<images.size();i++){
+                            mChatService.write(images.get(i));
+                        }
+                        Toast.makeText(getActivity(), images.size()+"Images Sent", Toast.LENGTH_LONG).show();
+                        images.clear();
+                    }
+                    else {
+                        Toast.makeText(getActivity(), "Please Select Images", Toast.LENGTH_LONG).show();
+
+                    }
+                }
+
+
+
             }
         });
     }

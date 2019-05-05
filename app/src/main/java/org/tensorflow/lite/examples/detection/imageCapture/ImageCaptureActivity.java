@@ -238,6 +238,8 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
                 final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 512, nh, true);
                 if (pictureUrl.contains("0_pic.jpg")) {
                     uploadBackPhoto.setImageBitmap(scaled);
+                    Utils.bitmap = scaled;
+
                 }
             });
             showToast("Picture saved to " + pictureUrl);
