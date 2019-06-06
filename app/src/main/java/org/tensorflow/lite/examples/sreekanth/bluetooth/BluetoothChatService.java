@@ -258,7 +258,7 @@ public class BluetoothChatService {
             if (mState != STATE_CONNECTED) return;
             r = mConnectedThread;
         }
-        // Perform the write unsynchronized
+        // Perform the write unsynchronizedzz
         r.write(out);
     }
 

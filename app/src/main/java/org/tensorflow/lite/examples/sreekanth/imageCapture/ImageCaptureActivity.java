@@ -2,7 +2,10 @@ package org.tensorflow.lite.examples.sreekanth.imageCapture;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,9 +27,11 @@ import android.widget.RadioButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import org.tensorflow.lite.examples.sreekanth.DetectorActivity;
 import org.tensorflow.lite.examples.sreekanth.R;
 import org.tensorflow.lite.examples.sreekanth.bluetooth.BluetoothChatFragment;
 import org.tensorflow.lite.examples.sreekanth.bluetooth.Model;
+import org.tensorflow.lite.examples.sreekanth.bluetooth.PictureListner;
 import org.tensorflow.lite.examples.sreekanth.bluetooth.Utils;
 import org.tensorflow.lite.examples.sreekanth.common.activities.SampleActivityBase;
 import org.tensorflow.lite.examples.sreekanth.common.logger.Log;
@@ -83,9 +88,6 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
         checkPermissions();
         uploadBackPhoto = (ImageView) findViewById(R.id.backIV);
         // getting instance of the Service from PictureCapturingServiceImpl
-        pictureService = PictureCapturingServiceImpl.getInstance(this);
-        showToast("Starting capture!");
-        pictureService.startCapturing(this);
 
 
         //Bt Related
@@ -208,6 +210,14 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
 
     }
 
+    public void captureImage()
+    {
+        pictureService = PictureCapturingServiceImpl.getInstance(this);
+        showToast("Starting capture!");
+        pictureService.startCapturing(this);
+
+    }
+
     private void showToast(final String text) {
         runOnUiThread(() ->
                 Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show()
@@ -229,6 +239,11 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
     /**
      * Displaying the pictures taken.
      */
+    PictureListner mPicListner;
+    public  void setPicListner(PictureListner mPicListner)
+    {
+        this.mPicListner = mPicListner;
+    }
     @Override
     public void onCaptureDone(String pictureUrl, byte[] pictureData) {
         if (pictureData != null && pictureUrl != null) {
@@ -239,10 +254,14 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
                 if (pictureUrl.contains("0_pic.jpg")) {
                     uploadBackPhoto.setImageBitmap(scaled);
                     Utils.bitmap = scaled;
+                    if(mPicListner!=null)
+                    {
+                        mPicListner.onImageCaptureDone(scaled);
+                    }
 
                 }
             });
-            showToast("Picture saved to " + pictureUrl);
+          //  showToast("Picture saved to " + pictureUrl);
         }
     }
 
@@ -376,5 +395,28 @@ public class ImageCaptureActivity extends SampleActivityBase implements PictureC
 
         }
     }
+
+    @Override
+    public void onBackPressed() {
+       // super.onBackPressed();
+
+        AlertDialog.Builder mABuilder = new AlertDialog.Builder(ImageCaptureActivity.this);
+        mABuilder.setMessage("Do you want to detect again?");
+        mABuilder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                startActivity(new Intent(getApplicationContext(), DetectorActivity.class));
+
+            }
+        });
+        mABuilder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+dialogInterface.dismiss();
+finish();
+            }
+        });
+        mABuilder.show();
     }
+}
 

@@ -63,6 +63,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Gallery" />
+        <Button
+            android:id="@+id/button_detect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Detect" />
     </LinearLayout>
 
 </LinearLayout>

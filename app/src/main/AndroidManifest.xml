@@ -26,14 +26,17 @@
         <activity
             android:name=".DetectorActivity"
             android:label="@string/activity_name_detection"
+            android:noHistory="true"
             android:screenOrientation="portrait">
+
+        </activity>
+        <activity android:name=".imageCapture.ImageCaptureActivity" android:theme="@style/ImageTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".imageCapture.ImageCaptureActivity" android:theme="@style/ImageTheme"></activity>
         <activity android:name=".bluetooth.DeviceListActivity" />
         <activity android:name=".bluetooth.DummyActivity" android:theme="@style/Theme.AppCompat.Dialog"></activity>
 

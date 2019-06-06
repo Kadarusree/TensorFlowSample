@@ -21,7 +21,9 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -45,8 +47,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.tensorflow.lite.examples.sreekanth.DetectorActivity;
 import org.tensorflow.lite.examples.sreekanth.R;
 import org.tensorflow.lite.examples.sreekanth.common.logger.Log;
+import org.tensorflow.lite.examples.sreekanth.imageCapture.ImageCaptureActivity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -62,14 +66,15 @@ import static android.app.Activity.RESULT_OK;
 /**
  * This fragment controls Bluetooth to communicate with other devices.
  */
-public class BluetoothChatFragment extends Fragment {
+public class BluetoothChatFragment extends Fragment implements PictureListner{
 
     private static final String TAG = "BluetoothChatFragment";
-
+    PictureListner mPictureListner;
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
     private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
     private static final int REQUEST_ENABLE_BT = 3;
+    private static final int PERSON_DETECT = 284;
 
     // Layout Views
     private ListView mConversationView;
@@ -109,10 +114,13 @@ public class BluetoothChatFragment extends Fragment {
     ArrayList<Model> images;
 
     private static final int SELECT_PICTURES = 37;
+    ImageCaptureActivity mActivity;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        mActivity = (ImageCaptureActivity) getActivity();
+        mActivity.setPicListner(this);
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         //  FingerprintHandler.setMlAuthListner(new FPListner());
@@ -166,7 +174,7 @@ public class BluetoothChatFragment extends Fragment {
     }
 
     ImageView img;
-    Button camera, send;
+    Button camera, send, detect;
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
@@ -182,13 +190,21 @@ public class BluetoothChatFragment extends Fragment {
         camera = (Button)view.findViewById(R.id.button_camera);
         img = (ImageView)view.findViewById(R.id.imageView);
         send = (Button)view.findViewById(R.id.button_send);
-        img = (ImageView)view.findViewById(R.id.imageView);
+        detect = (Button)view.findViewById(R.id.button_detect);
 
         camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 startActivityForResult(takePicture, 8);
+            }
+        });
+
+        detect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent serverIntent = new Intent(getActivity(), DetectorActivity.class);
+                startActivityForResult(serverIntent, PERSON_DETECT);
             }
         });
 
@@ -459,6 +475,9 @@ public class BluetoothChatFragment extends Fragment {
                     connectDevice(data, true);
                 }
                 break;
+            case PERSON_DETECT:
+                mActivity.captureImage();
+                break;
             case REQUEST_CONNECT_DEVICE_INSECURE:
                 // When DeviceListActivity returns with a device to connect
                 if (resultCode == RESULT_OK) {
@@ -608,14 +627,22 @@ public class BluetoothChatFragment extends Fragment {
      * @param data   An {@link Intent} with {@link DeviceListActivity#EXTRA_DEVICE_ADDRESS} extra.
      * @param secure Socket Security type - Secure (true) , Insecure (false)
      */
+    SharedPreferences mSharedPreferences;
+    SharedPreferences.Editor mEdit;
     private void connectDevice(Intent data, boolean secure) {
         // Get the device MAC address
         String address = data.getExtras()
                 .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+
+
+
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+
+
         // Attempt to connect to the device
         mChatService.connect(device, secure);
+
     }
 
     @Override
@@ -648,7 +675,18 @@ public class BluetoothChatFragment extends Fragment {
     }
 
 
+    @Override
+    public void onImageCaptureDone(Bitmap mBitmap) {
+Toast.makeText(getActivity(),"Image avaiable in Fragment",Toast.LENGTH_LONG).show();
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        if(mBitmap!=null) {
+            mBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            byte[] byteArray = stream.toByteArray();
 
+            Model m = new Model(byteArray, Utils.storagePath);
 
-
+            mChatService.write(m);
+            Utils.bitmap = null;
+        }
+    }
 }

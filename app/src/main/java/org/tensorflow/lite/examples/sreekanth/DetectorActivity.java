@@ -17,6 +17,7 @@
 package org.tensorflow.lite.examples.sreekanth;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -28,6 +29,7 @@ import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Size;
@@ -109,8 +111,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   //The capture service
   private APictureCapturingService pictureService;
+  Bundle savedInstanceState;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+      this.savedInstanceState = savedInstanceState;
+    }
 
-  @Override
+    @Override
   public void onPreviewSizeChosen(final Size size, final int rotation) {
     final float textSizePx =
         TypedValue.applyDimension(
@@ -248,7 +256,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 if(result.getTitle().equalsIgnoreCase("person")&&result.getConfidence()>0.6){
                   //takeScreenshot();
-                  startActivity(new Intent(getApplicationContext(), ImageCaptureActivity.class));
+                //  startActivity(new Intent(getApplicationContext(), ImageCaptureActivity.class));
+                  sendResult();
                    return;
                 }
             mappedRecognitions.add(result);
@@ -356,5 +365,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     runOnUiThread(() ->
             Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show()
     );
+  }
+
+  public void sendResult(){
+    // Create the result Intent and include the MAC address
+    Intent intent = new Intent();
+
+    // Set result and finish this Activity
+    setResult(Activity.RESULT_OK, intent);
+    finish();
   }
 }
